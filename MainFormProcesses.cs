@@ -136,29 +136,28 @@ namespace ExtraeNombresACarpetas
             return result;
         }
 
-        private void CreateFolders(List<string> foldersNames)
-        {
-            var basePath = mainForm.txtFolderDestination.Text;
-
-            foreach (var folderName in foldersNames)
-            {
-                Directory.CreateDirectory(Path.Combine(basePath, folderName));
-            }
-        }
-
         private List<string> ExtractDataFromCells(System.Data.DataSet dataSet)
         {
             var result = new List<string>();
 
             // Always same column
-            int columnIndex = ExcelColumnNameToNumber(mainForm.txtColumn.Text);
-            // Convert to int
+            // Minus one because the function returns index starting in 1, like Excel
+            int columnIndex = ExcelColumnNameToNumber(mainForm.txtColumn.Text) - 1;
+            
+            // Convert rows to int
             int startRowIndex = (int)mainForm.numStartRow.Value - 1;
             int endRowIndex = (int)mainForm.numEndRow.Value - 1;
 
             // From startRow until endRow
             for (int rowIndex = startRowIndex; rowIndex <= endRowIndex; rowIndex++)
             {
+                if (rowIndex >= dataSet.Tables[0].Rows.Count ||
+                        columnIndex >= dataSet.Tables[0].Columns.Count)
+                {
+                    // We're now out of range
+                    break;
+                }
+
                 string text = dataSet.Tables[0].Rows[rowIndex][columnIndex].ToString();
 
                 // Ignore blank cells
@@ -172,7 +171,8 @@ namespace ExtraeNombresACarpetas
 
         private int ExcelColumnNameToNumber(string columnName)
         {
-            if (string.IsNullOrEmpty(columnName)) throw new ArgumentNullException("columnName");
+            if (string.IsNullOrEmpty(columnName))
+                    throw new ArgumentNullException("columnName");
 
             columnName = columnName.ToUpperInvariant();
 
@@ -181,10 +181,20 @@ namespace ExtraeNombresACarpetas
             for (int i = 0; i < columnName.Length; i++)
             {
                 sum *= 26;
-                sum += (columnName[i] - 'A');
+                sum += (columnName[i] - 'A' + 1);
             }
 
             return sum;
+        }
+
+        private void CreateFolders(List<string> foldersNames)
+        {
+            var basePath = mainForm.txtFolderDestination.Text;
+
+            foreach (var folderName in foldersNames)
+            {
+                Directory.CreateDirectory(Path.Combine(basePath, folderName));
+            }
         }
 
         private void Success()
